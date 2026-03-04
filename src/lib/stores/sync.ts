@@ -10,11 +10,13 @@ import type { SyncFile } from '$lib/types';
 
 const LS_CLIENT_ID = 'gdrive_client_id';
 const LS_FILE_ID = 'gdrive_file_id';
+const LS_LAST_SYNCED = 'gdrive_last_synced';
 
 function loadClientId(): string { return localStorage.getItem(LS_CLIENT_ID) ?? ''; }
 function saveClientId(id: string): void { localStorage.setItem(LS_CLIENT_ID, id); }
 function loadFileId(): string | null { return localStorage.getItem(LS_FILE_ID); }
 function saveFileId(id: string): void { localStorage.setItem(LS_FILE_ID, id); }
+function loadLastSynced(): number | null { const v = localStorage.getItem(LS_LAST_SYNCED); return v ? parseInt(v) : null; }
 function loadInt(key: string): number {
 	return parseInt(localStorage.getItem(key) ?? '0') || 0;
 }
@@ -34,6 +36,7 @@ export async function initSync(): Promise<void> {
 	const clientId = loadClientId();
 	if (!clientId) return;
 	syncClientId.set(clientId);
+	lastSynced.set(loadLastSynced());
 	try {
 		await drive.loadGisScript();
 		await performSync(clientId, true);
@@ -52,6 +55,7 @@ export async function connectDrive(clientId: string): Promise<void> {
 export function disconnectDrive(): void {
 	localStorage.removeItem(LS_CLIENT_ID);
 	localStorage.removeItem(LS_FILE_ID);
+	localStorage.removeItem(LS_LAST_SYNCED);
 	drive.clearTokenCache();
 	syncClientId.set('');
 	syncStatus.set('disconnected');
@@ -193,7 +197,9 @@ async function performSync(clientId: string, silent: boolean): Promise<void> {
 		const newFileId = await drive.uploadSyncFile(token, syncFile, fileId);
 		saveFileId(newFileId);
 
-		lastSynced.set(Date.now());
+		const now = Date.now();
+		localStorage.setItem(LS_LAST_SYNCED, String(now));
+		lastSynced.set(now);
 		syncStatus.set('success');
 	} catch (e) {
 		if (silent) {

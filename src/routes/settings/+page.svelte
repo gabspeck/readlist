@@ -10,6 +10,11 @@
 
 	let proxyValue = $state($corsProxy);
 	let saved = $state(false);
+	let lastExportedAt = $state<number | null>(
+		typeof localStorage !== 'undefined'
+			? (parseInt(localStorage.getItem('lastBackupAt') ?? '') || null)
+			: null
+	);
 
 	let clientIdInput = $state($syncClientId);
 	let connecting = $state(false);
@@ -30,7 +35,7 @@
 		finally { syncing = false; }
 	}
 
-	function formatLastSynced(ts: number | null): string {
+	function formatTs(ts: number | null): string {
 		if (!ts) return 'Never';
 		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ts));
 	}
@@ -58,6 +63,9 @@
 		a.download = `readlist-backup-${new Date().toISOString().slice(0, 10)}.json`;
 		a.click();
 		setTimeout(() => URL.revokeObjectURL(url), 10_000);
+		const now = Date.now();
+		localStorage.setItem('lastBackupAt', String(now));
+		lastExportedAt = now;
 	}
 
 	async function importData(e: Event): Promise<void> {
@@ -120,7 +128,10 @@
 
 		<section class="settings-section">
 			<h2 class="section-title">Data</h2>
-			<p class="section-desc">All your data is stored locally on this device.</p>
+			<p class="section-desc">
+				All your data is stored locally on this device.
+				Last exported: {formatTs(lastExportedAt)}.
+			</p>
 			<div class="data-buttons">
 				<button class="btn-secondary" onclick={exportData}>
 					Export backup (JSON)
@@ -137,7 +148,7 @@
 
 			{#if $syncClientId}
 				<p class="section-desc">
-					Syncing to Google Drive. Last synced: {formatLastSynced($lastSynced)}.
+					Syncing to Google Drive. Last synced: {formatTs($lastSynced)}.
 				</p>
 				{#if $syncStatus === 'error'}
 					<p class="sync-error">{$syncError}</p>
