@@ -4,6 +4,7 @@
 	import { initSettings } from '$lib/stores/settings';
 	import { initReaderSettings } from '$lib/stores/reader';
 	import { initAppTheme } from '$lib/stores/theme';
+	import { initSync } from '$lib/stores/sync';
 
 	let { children } = $props();
 
@@ -11,6 +12,7 @@
 		initSettings();
 		initReaderSettings();
 		initAppTheme();
+		initSync();
 	});
 </script>
 

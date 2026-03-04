@@ -41,6 +41,7 @@
 				excerpt: preview.excerpt ?? '',
 				content: preview.content ?? '',
 				savedAt: Date.now(),
+				updatedAt: Date.now(),
 				isRead: false,
 				tags: [],
 				archived: false,

@@ -8,6 +8,25 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	const google: {
+		accounts: {
+			oauth2: {
+				initTokenClient(config: {
+					client_id: string;
+					scope: string;
+					callback: (response: {
+						access_token: string;
+						expires_in: string | number;
+						error?: string;
+					}) => void;
+					error_callback?: (err: { message?: string; type?: string }) => void;
+				}): {
+					requestAccessToken(opts?: { prompt?: string }): void;
+				};
+			};
+		};
+	};
 }
 
 export {};

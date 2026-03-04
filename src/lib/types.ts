@@ -7,11 +7,22 @@ export interface Article {
 	excerpt: string;
 	content: string; // HTML string
 	savedAt: number; // Date.now()
+	updatedAt: number; // Date.now() — updated on every mutable write
 	isRead: boolean;
 	tags: string[];
 	archived: boolean;
 	siteName: string;
 	wordCount: number;
+}
+
+export interface SyncFile {
+	version: 1;
+	exportedAt: number;
+	articles: Article[];
+	readerSettings?: ReaderSettings & { updatedAt: number };
+	appTheme?: { value: 'system' | 'light' | 'dark'; updatedAt: number };
+	readingProgress?: Record<string, number>; // articleId → 0-100
+	lastOpenedAt?: Record<string, number>;    // articleId → timestamp
 }
 
 export interface Highlight {

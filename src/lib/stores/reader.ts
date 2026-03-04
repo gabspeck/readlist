@@ -27,8 +27,11 @@ export function initReaderSettings(): void {
 	readerSettings.set(load());
 }
 
+export const READER_SETTINGS_UPDATED_AT_KEY = 'readerSettingsUpdatedAt';
+
 readerSettings.subscribe((value) => {
 	if (typeof localStorage !== 'undefined') {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+		localStorage.setItem(READER_SETTINGS_UPDATED_AT_KEY, String(Date.now()));
 	}
 });

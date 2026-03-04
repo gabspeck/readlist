@@ -3,9 +3,37 @@
 	import { corsProxy } from '$lib/stores/settings';
 	import { getAllArticles } from '$lib/services/storage';
 	import { saveArticle } from '$lib/services/storage';
+	import {
+		syncStatus, syncError, lastSynced, syncClientId,
+		connectDrive, disconnectDrive, manualSync
+	} from '$lib/stores/sync';
 
 	let proxyValue = $state($corsProxy);
 	let saved = $state(false);
+
+	let clientIdInput = $state($syncClientId);
+	let connecting = $state(false);
+	let syncing = $state(false);
+
+	$effect(() => { clientIdInput = $syncClientId; });
+
+	async function handleConnect(): Promise<void> {
+		if (!clientIdInput.trim()) return;
+		connecting = true;
+		try { await connectDrive(clientIdInput.trim()); }
+		finally { connecting = false; }
+	}
+
+	async function handleSync(): Promise<void> {
+		syncing = true;
+		try { await manualSync(); }
+		finally { syncing = false; }
+	}
+
+	function formatLastSynced(ts: number | null): string {
+		if (!ts) return 'Never';
+		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ts));
+	}
 
 	let bookmarkletHref = $derived.by(() => {
 		if (typeof window === 'undefined') return '#';
@@ -102,6 +130,53 @@
 					<input type="file" accept=".json" class="file-input" onchange={importData} />
 				</label>
 			</div>
+		</section>
+
+		<section class="settings-section">
+			<h2 class="section-title">Google Drive Sync</h2>
+
+			{#if $syncClientId}
+				<p class="section-desc">
+					Syncing to Google Drive. Last synced: {formatLastSynced($lastSynced)}.
+				</p>
+				{#if $syncStatus === 'error'}
+					<p class="sync-error">{$syncError}</p>
+				{/if}
+				<div class="data-buttons">
+					<button
+						class="btn-secondary"
+						onclick={handleSync}
+						disabled={syncing || $syncStatus === 'syncing'}
+					>
+						{syncing || $syncStatus === 'syncing' ? 'Syncing…' : 'Sync now'}
+					</button>
+					<button class="btn-secondary" onclick={disconnectDrive}>Disconnect</button>
+				</div>
+			{:else}
+				<p class="section-desc">
+					Sync your reading list and settings across devices using your own Google Drive storage.
+					You'll need a Google OAuth Client ID — create one in the
+					<a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>
+					(enable the Drive API and add your app's URL as an authorized JavaScript origin).
+				</p>
+				<div class="proxy-row">
+					<input
+						type="text"
+						bind:value={clientIdInput}
+						class="proxy-input"
+						placeholder="xxxxxx.apps.googleusercontent.com"
+						spellcheck={false}
+						autocomplete="off"
+					/>
+					<button
+						class="btn-save"
+						onclick={handleConnect}
+						disabled={connecting || !clientIdInput.trim()}
+					>
+						{connecting ? 'Connecting…' : 'Connect'}
+					</button>
+				</div>
+			{/if}
 		</section>
 
 		<section class="settings-section">
@@ -282,6 +357,12 @@
 
 	.file-input {
 		display: none;
+	}
+
+	.sync-error {
+		font-size: 0.875rem;
+		color: #c0392b;
+		margin-bottom: 0.875rem;
 	}
 
 	.bookmarklet-row {

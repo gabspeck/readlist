@@ -62,8 +62,9 @@ export async function loadArticles(): Promise<void> {
 }
 
 export async function addArticle(article: Article): Promise<void> {
-	await storage.saveArticle(article);
-	articles.update((all) => [article, ...all]);
+	const stamped = { ...article, updatedAt: Date.now() };
+	await storage.saveArticle(stamped);
+	articles.update((all) => [stamped, ...all]);
 }
 
 export async function markRead(id: string, isRead: boolean): Promise<void> {

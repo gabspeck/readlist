@@ -31,6 +31,7 @@
 				...parsed,
 				id: crypto.randomUUID(),
 				savedAt: Date.now(),
+				updatedAt: Date.now(),
 				isRead: false,
 				tags: [],
 				archived: false

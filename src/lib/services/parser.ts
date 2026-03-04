@@ -15,7 +15,7 @@ function countWords(html: string): number {
 	return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-export async function parseArticle(url: string): Promise<Omit<Article, 'id' | 'savedAt' | 'isRead' | 'tags' | 'archived'>> {
+export async function parseArticle(url: string): Promise<Omit<Article, 'id' | 'savedAt' | 'updatedAt' | 'isRead' | 'tags' | 'archived'>> {
 	const proxy = getProxy();
 	const fetchUrl = proxy + encodeURIComponent(url);
 

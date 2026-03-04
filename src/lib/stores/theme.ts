@@ -12,7 +12,7 @@ function load(): AppTheme {
 	}
 }
 
-function applyTheme(theme: AppTheme): void {
+export function applyTheme(theme: AppTheme): void {
 	const el = document.documentElement;
 	if (theme === 'system') {
 		el.removeAttribute('data-theme');
@@ -29,9 +29,12 @@ export function initAppTheme(): void {
 	applyTheme(theme);
 }
 
+export const APP_THEME_UPDATED_AT_KEY = 'appThemeUpdatedAt';
+
 appTheme.subscribe((theme) => {
 	if (typeof localStorage === 'undefined') return;
 	localStorage.setItem(STORAGE_KEY, theme);
+	localStorage.setItem(APP_THEME_UPDATED_AT_KEY, String(Date.now()));
 	applyTheme(theme);
 });
 
