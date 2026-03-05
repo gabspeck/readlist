@@ -34,7 +34,24 @@ interface GisToken {
 	expires_at: number;
 }
 
-let cachedToken: GisToken | null = null;
+const TOKEN_LS_KEY = 'gdrive_token';
+
+// Restore token from localStorage on module init so page refreshes within
+// the token's lifetime (typically 1 hour) need no GIS call at all.
+let cachedToken: GisToken | null = (() => {
+	try {
+		const raw = localStorage.getItem(TOKEN_LS_KEY);
+		if (!raw) return null;
+		const t = JSON.parse(raw) as GisToken;
+		return t.expires_at - Date.now() > 60_000 ? t : null;
+	} catch {
+		return null;
+	}
+})();
+
+export function hasValidToken(): boolean {
+	return cachedToken !== null && cachedToken.expires_at - Date.now() > 60_000;
+}
 
 export function getAccessToken(clientId: string, silent = false): Promise<string> {
 	if (cachedToken && cachedToken.expires_at - Date.now() > 60_000) {
@@ -51,6 +68,7 @@ export function getAccessToken(clientId: string, silent = false): Promise<string
 					access_token: response.access_token,
 					expires_at: Date.now() + Number(response.expires_in) * 1000
 				};
+				localStorage.setItem(TOKEN_LS_KEY, JSON.stringify(cachedToken));
 				resolve(cachedToken.access_token);
 			},
 			error_callback: (err) => reject(new Error(err.message ?? 'GIS error'))
@@ -64,6 +82,7 @@ export function getAccessToken(clientId: string, silent = false): Promise<string
 
 export function clearTokenCache(): void {
 	cachedToken = null;
+	localStorage.removeItem(TOKEN_LS_KEY);
 }
 
 // ─── Drive REST API ───────────────────────────────────────────────────────────
