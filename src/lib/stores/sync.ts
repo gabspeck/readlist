@@ -58,12 +58,10 @@ export async function initSync(): Promise<void> {
 	if (!PUBLIC_GOOGLE_CLIENT_ID) return;
 	if (!localStorage.getItem(LS_CONNECTED)) return;
 	lastSynced.set(loadLastSynced());
-	try {
-		await drive.loadGisScript();
-		await performSync(true);
-	} catch {
-		syncStatus.set('idle');
-	}
+	// Don't attempt sync on load — GIS has no persistent token across page
+	// refreshes, so any token request would require a popup (blocked by browsers)
+	// or immediately fail. Auto-sync fires on the first article/settings change.
+	drive.loadGisScript().catch(() => {}); // preload script in background
 	watchForChanges();
 }
 

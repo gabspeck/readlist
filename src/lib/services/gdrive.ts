@@ -55,11 +55,10 @@ export function getAccessToken(clientId: string, silent = false): Promise<string
 			},
 			error_callback: (err) => reject(new Error(err.message ?? 'GIS error'))
 		});
-		// prompt:'none' = fully suppress any UI; GIS calls error_callback if it
-		// can't get a token without user interaction, which we catch and handle.
-		// prompt:undefined = allow the normal consent/account-picker popup, only
-		// used for explicit user-triggered actions (connect, manual sync).
-		client.requestAccessToken({ prompt: silent ? 'none' : undefined });
+		// prompt:'' = skip consent/account-picker if scope already granted and
+		// an active Google session exists (works silently in that case).
+		// prompt:undefined = allow the full popup, used for user-triggered actions.
+		client.requestAccessToken({ prompt: silent ? '' : undefined });
 	});
 }
 
