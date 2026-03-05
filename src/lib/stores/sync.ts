@@ -40,6 +40,14 @@ let autoSyncTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function scheduleSync(): void {
 	if (!localStorage.getItem(LS_CONNECTED)) return;
+	// Speculatively refresh the token while still in the user-gesture context.
+	// If the token is valid this is a no-op (returns the cached value instantly).
+	// If it's expired, GIS can show its account-picker popup here — the browser
+	// allows it because we're inside a user-interaction call stack. By the time
+	// the setTimeout fires the token is already cached and no popup is needed.
+	drive.loadGisScript()
+		.then(() => drive.getAccessToken(PUBLIC_GOOGLE_CLIENT_ID, true))
+		.catch(() => {});
 	clearTimeout(autoSyncTimer);
 	autoSyncTimer = setTimeout(() => { performSync(true); }, 3000);
 }

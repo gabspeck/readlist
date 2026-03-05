@@ -3,8 +3,15 @@
 	import { goto } from '$app/navigation';
 	import { appTheme, cycleTheme } from '$lib/stores/theme';
 	import { searchQuery } from '$lib/stores/articles';
-	import { syncStatus } from '$lib/stores/sync';
+	import { syncStatus, manualSync } from '$lib/stores/sync';
 	import type { FilterMode } from '$lib/types';
+
+	let reconnecting = $state(false);
+
+	async function reconnect(): Promise<void> {
+		reconnecting = true;
+		try { await manualSync(); } finally { reconnecting = false; }
+	}
 
 	let { onAdd, hasArticles = false }: { onAdd: () => void; hasArticles?: boolean } = $props();
 
@@ -72,6 +79,11 @@
 			<a href="/" class="brand-link">Readlist</a>
 
 			<div class="nav-actions">
+				{#if $syncStatus === 'needs_auth'}
+					<button class="reconnect-btn" onclick={reconnect} disabled={reconnecting}>
+						{reconnecting ? 'Syncing…' : 'Reconnect Drive'}
+					</button>
+				{/if}
 				{#if isHome}
 					<button class="icon-btn" onclick={openSearch} aria-label="Search" disabled={!hasArticles}>
 						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -112,14 +124,11 @@
 					{/if}
 				</button>
 
-				<a href="/settings" class="icon-btn settings-btn" aria-label="Settings{$syncStatus === 'needs_auth' ? ' (sync needs attention)' : ''}" aria-current={$page.url.pathname === '/settings' ? 'page' : undefined}>
+				<a href="/settings" class="icon-btn" aria-label="Settings" aria-current={$page.url.pathname === '/settings' ? 'page' : undefined}>
 					<!-- Gear / cog -->
 					<svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
 					</svg>
-					{#if $syncStatus === 'needs_auth'}
-						<span class="sync-problem-dot" aria-hidden="true"></span>
-					{/if}
 				</a>
 			</div>
 		{/if}
@@ -211,19 +220,25 @@
 		color: var(--color-accent);
 	}
 
-	.settings-btn {
-		position: relative;
+	.reconnect-btn {
+		padding: 0.3rem 0.625rem;
+		background: color-mix(in srgb, #f59e0b 15%, transparent);
+		color: #b45309;
+		border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
+		border-radius: var(--radius-md);
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+		white-space: nowrap;
 	}
 
-	.sync-problem-dot {
-		position: absolute;
-		top: 6px;
-		right: 6px;
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: #f59e0b;
-		border: 1.5px solid var(--color-surface);
+	.reconnect-btn:hover:not(:disabled) {
+		background: color-mix(in srgb, #f59e0b 25%, transparent);
+	}
+
+	.reconnect-btn:disabled {
+		opacity: 0.6;
+		cursor: default;
 	}
 
 	/* Search bar */
