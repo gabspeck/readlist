@@ -11,6 +11,7 @@
 		articles,
 		filteredArticles,
 		filterMode,
+		searchQuery,
 		isLoading,
 		loadArticles,
 		addArticle,
@@ -169,7 +170,7 @@
 </script>
 
 <div class="app-shell">
-	<Navigation onAdd={() => { showAddDialog = true; }} />
+	<Navigation onAdd={() => { showAddDialog = true; }} hasArticles={$articles.length > 0} />
 
 	<main class="main">
 		{#if $isLoading}
@@ -183,7 +184,7 @@
 				{/each}
 			</div>
 		{:else if visibleCount === 0}
-			<EmptyState onAdd={() => { showAddDialog = true; }} />
+			<EmptyState onAdd={() => { showAddDialog = true; }} isSearch={!!$searchQuery.trim()} isEmpty={$articles.length === 0} />
 		{:else}
 			<div class="list-header">
 				<label class="select-all-label">

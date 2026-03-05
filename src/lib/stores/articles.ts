@@ -6,6 +6,7 @@ export const articles = writable<Article[]>([]);
 export const filterMode = writable<FilterMode>('all');
 export const sortMode = writable<SortMode>('newest');
 export const selectedTag = writable<string | null>(null);
+export const searchQuery = writable<string>('');
 export const isLoading = writable(true);
 
 function readLocalInt(key: string): number {
@@ -29,14 +30,19 @@ function applySort(list: Article[], sort: SortMode): Article[] {
 }
 
 export const filteredArticles = derived(
-	[articles, filterMode, selectedTag, sortMode],
-	([$articles, $filter, $tag, $sort]) => {
+	[articles, filterMode, selectedTag, sortMode, searchQuery],
+	([$articles, $filter, $tag, $sort, $query]) => {
+		const q = $query.trim().toLowerCase();
 		const filtered = $articles.filter((a) => {
 			if ($tag && !a.tags.includes($tag)) return false;
-			if ($filter === 'all') return !a.archived;
-			if ($filter === 'unread') return !a.isRead && !a.archived;
-			if ($filter === 'read') return a.isRead && !a.archived;
-			if ($filter === 'archived') return a.archived;
+			if ($filter === 'all') { if (a.archived) return false; }
+			else if ($filter === 'unread') { if (a.isRead || a.archived) return false; }
+			else if ($filter === 'read') { if (!a.isRead || a.archived) return false; }
+			else if ($filter === 'archived') { if (!a.archived) return false; }
+			if (q) {
+				const haystack = `${a.title} ${a.siteName} ${a.author} ${a.excerpt}`.toLowerCase();
+				if (!haystack.includes(q)) return false;
+			}
 			return true;
 		});
 		return applySort(filtered, $sort);

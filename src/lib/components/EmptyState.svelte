@@ -1,19 +1,34 @@
 <script lang="ts">
-	let { onAdd }: { onAdd: () => void } = $props();
+	let { onAdd, isSearch = false, isEmpty = true }: { onAdd: () => void; isSearch?: boolean; isEmpty?: boolean } = $props();
 </script>
 
 <div class="empty">
 	<div class="empty-icon" aria-hidden="true">
-		<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-			<rect x="8" y="14" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
-			<path d="M24 26h16M24 32h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-		</svg>
+		{#if isSearch}
+			<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+				<circle cx="27" cy="27" r="16" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+				<path d="M39 39l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+			</svg>
+		{:else}
+			<svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+				<rect x="8" y="14" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+				<path d="M24 26h16M24 32h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+			</svg>
+		{/if}
 	</div>
-	<h2 class="empty-title">Your reading list is empty</h2>
-	<p class="empty-desc">Save articles to read them later, offline, without distractions.</p>
-	<button class="empty-action" onclick={onAdd}>
-		Save your first article
-	</button>
+	{#if isSearch}
+		<h2 class="empty-title">No results found</h2>
+		<p class="empty-desc">Try a different search term.</p>
+	{:else if isEmpty}
+		<h2 class="empty-title">Your reading list is empty</h2>
+		<p class="empty-desc">Save articles to read them later, offline, without distractions.</p>
+		<button class="empty-action" onclick={onAdd}>
+			Save your first article
+		</button>
+	{:else}
+		<h2 class="empty-title">Nothing here</h2>
+		<p class="empty-desc">No articles in this section yet.</p>
+	{/if}
 </div>
 
 <style>
