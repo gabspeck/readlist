@@ -6,6 +6,7 @@
 	import { markRead } from '$lib/stores/articles';
 	import { getArticle } from '$lib/services/storage';
 	import ReaderControls from '$lib/components/ReaderControls.svelte';
+	import { copyToClipboard } from '$lib/services/share';
 	import type { Article } from '$lib/types';
 
 	let article = $state<Article | null>(null);
@@ -52,9 +53,6 @@
 
 			localStorage.setItem(`lastopenat:${id}`, String(Date.now()));
 
-			// Restore saved position after the article has rendered
-			requestAnimationFrame(() => restoreScrollPosition(id));
-
 			let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
 			const handleScroll = () => {
@@ -74,12 +72,16 @@
 				}
 			};
 
-			if (!articleEl) return;
-			articleEl.addEventListener('scroll', handleScroll, { passive: true });
-			cleanup = () => {
-				articleEl?.removeEventListener('scroll', handleScroll);
-				clearTimeout(saveTimer);
-			};
+			// Wait for {#if article} block to render before attaching listener
+			requestAnimationFrame(() => {
+				restoreScrollPosition(id);
+				if (!articleEl) return;
+				articleEl.addEventListener('scroll', handleScroll, { passive: true });
+				cleanup = () => {
+					articleEl?.removeEventListener('scroll', handleScroll);
+					clearTimeout(saveTimer);
+				};
+			});
 		});
 
 		return () => cleanup?.();
@@ -87,6 +89,19 @@
 
 	function readingTime(wordCount: number): string {
 		return `${Math.ceil(wordCount / 238)} min read`;
+	}
+
+	let copied = $state(false);
+
+	async function shareArticle(): Promise<void> {
+		if (!article) return;
+		if (navigator.share) {
+			await navigator.share({ title: article.title, url: article.url });
+		} else {
+			await copyToClipboard(article.url);
+			copied = true;
+			setTimeout(() => { copied = false; }, 2000);
+		}
 	}
 
 	let themeAttr = $derived(
@@ -111,6 +126,21 @@
 			</svg>
 		</button>
 		<span class="header-site">{article.siteName || new URL(article.url).hostname}</span>
+
+		<button class="header-btn" aria-label="Share" onclick={shareArticle}>
+			{#if copied}
+				<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+					<path d="M4 10l5 5L16 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			{:else}
+				<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+					<circle cx="15" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/>
+					<circle cx="15" cy="16" r="2" stroke="currentColor" stroke-width="1.5"/>
+					<circle cx="5" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+					<path d="M7 9l6-3.5M7 11l6 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+				</svg>
+			{/if}
+		</button>
 
 		<!-- Reader / web-view toggle -->
 		<button
@@ -212,10 +242,11 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		position: relative;
 	}
 
 	.progress-bar {
-		position: fixed;
+		position: absolute;
 		top: 0;
 		left: 0;
 		height: 2px;

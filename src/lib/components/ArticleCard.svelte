@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Article } from '$lib/types';
+	import { copyToClipboard } from '$lib/services/share';
 
 	let {
 		article,
@@ -36,6 +37,7 @@
 	}
 
 	let showMenu = $state(false);
+	let copied = $state(false);
 
 	function toggleMenu(e: Event): void {
 		e.preventDefault();
@@ -45,6 +47,17 @@
 
 	function closeMenu(): void {
 		showMenu = false;
+	}
+
+	async function shareArticle(): Promise<void> {
+		closeMenu();
+		if (navigator.share) {
+			await navigator.share({ title: article.title, url: article.url });
+		} else {
+			await copyToClipboard(article.url);
+			copied = true;
+			setTimeout(() => { copied = false; }, 2000);
+		}
 	}
 </script>
 
@@ -94,6 +107,9 @@
 	{/if}
 
 	<div class="card-actions">
+		{#if copied}
+			<span class="copied-label" aria-live="polite">Copied!</span>
+		{/if}
 		<button
 			class="menu-trigger"
 			aria-label="Article options"
@@ -111,6 +127,9 @@
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="overlay" onclick={closeMenu} onkeydown={(e) => e.key === 'Escape' && closeMenu()}></div>
 			<div class="menu" role="menu">
+				<button role="menuitem" onclick={shareArticle}>
+					Share
+				</button>
 				<button
 					role="menuitem"
 					onclick={() => { onToggleRead?.(article.id, !article.isRead); closeMenu(); }}
@@ -259,6 +278,16 @@
 	.card-actions {
 		position: relative;
 		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.copied-label {
+		font-size: 0.75rem;
+		color: var(--color-accent);
+		font-weight: 500;
+		white-space: nowrap;
 	}
 
 	.menu-trigger {
