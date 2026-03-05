@@ -5,7 +5,7 @@
 	import { getAllArticles } from '$lib/services/storage';
 	import { saveArticle } from '$lib/services/storage';
 	import {
-		syncStatus, syncError, lastSynced,
+		syncStatus, lastSynced,
 		connectDrive, disconnectDrive, manualSync
 	} from '$lib/stores/sync';
 
@@ -148,12 +148,7 @@
 				<p class="section-desc">
 					Syncing to Google Drive. Last synced: {formatTs($lastSynced)}.
 				</p>
-				{#if $syncStatus === 'needs_auth'}
-					<p class="sync-warning">Google session expired — click "Sync now" to reconnect.</p>
-				{:else if $syncStatus === 'error'}
-					<p class="sync-error">{$syncError}</p>
-				{/if}
-				<div class="data-buttons">
+					<div class="data-buttons">
 					<button
 						class="btn-secondary"
 						onclick={handleSync}
@@ -362,18 +357,6 @@
 
 	.file-input {
 		display: none;
-	}
-
-	.sync-warning {
-		font-size: 0.875rem;
-		color: #b45309;
-		margin-bottom: 0.875rem;
-	}
-
-	.sync-error {
-		font-size: 0.875rem;
-		color: #c0392b;
-		margin-bottom: 0.875rem;
 	}
 
 	.bookmarklet-row {

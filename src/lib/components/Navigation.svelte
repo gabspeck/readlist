@@ -82,13 +82,12 @@
 				{#if $syncStatus !== 'disconnected'}
 					<button
 						class="icon-btn sync-btn"
-						class:sync-pending={$hasPendingChanges && $syncStatus !== 'syncing' && $syncStatus !== 'error'}
-						class:sync-error={$syncStatus === 'error' || $syncStatus === 'needs_auth'}
+						class:sync-pending={$hasPendingChanges && $syncStatus !== 'syncing'}
 						class:sync-spinning={syncing || $syncStatus === 'syncing'}
 						onclick={handleSync}
 						disabled={syncing || $syncStatus === 'syncing'}
 						aria-label="Sync with Google Drive"
-						title={$syncStatus === 'needs_auth' ? 'Session expired — click to reconnect' : $syncStatus === 'error' ? 'Sync failed — click to retry' : $hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
+						title={$hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
 					>
 						<svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="sync-icon">
 							<path d="M3 10a7 7 0 0 1 11.9-5M17 10a7 7 0 0 1-11.9 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -244,10 +243,6 @@
 		color: var(--color-accent);
 	}
 
-	.sync-btn.sync-error {
-		color: #b45309;
-	}
-
 	.sync-dot {
 		position: absolute;
 		top: 7px;
@@ -257,10 +252,6 @@
 		border-radius: 50%;
 		background: var(--color-accent);
 		border: 1.5px solid var(--color-surface);
-	}
-
-	.sync-btn.sync-error .sync-dot {
-		background: #f59e0b;
 	}
 
 	@keyframes spin {
