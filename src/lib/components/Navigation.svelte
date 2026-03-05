@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { appTheme, cycleTheme } from '$lib/stores/theme';
 	import { searchQuery } from '$lib/stores/articles';
+	import { syncStatus } from '$lib/stores/sync';
 	import type { FilterMode } from '$lib/types';
 
 	let { onAdd, hasArticles = false }: { onAdd: () => void; hasArticles?: boolean } = $props();
@@ -111,11 +112,14 @@
 					{/if}
 				</button>
 
-				<a href="/settings" class="icon-btn" aria-label="Settings" aria-current={$page.url.pathname === '/settings' ? 'page' : undefined}>
+				<a href="/settings" class="icon-btn settings-btn" aria-label="Settings{$syncStatus === 'needs_auth' ? ' (sync needs attention)' : ''}" aria-current={$page.url.pathname === '/settings' ? 'page' : undefined}>
 					<!-- Gear / cog -->
 					<svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
 					</svg>
+					{#if $syncStatus === 'needs_auth'}
+						<span class="sync-problem-dot" aria-hidden="true"></span>
+					{/if}
 				</a>
 			</div>
 		{/if}
@@ -205,6 +209,21 @@
 
 	.icon-btn[aria-current="page"] {
 		color: var(--color-accent);
+	}
+
+	.settings-btn {
+		position: relative;
+	}
+
+	.sync-problem-dot {
+		position: absolute;
+		top: 6px;
+		right: 6px;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: #f59e0b;
+		border: 1.5px solid var(--color-surface);
 	}
 
 	/* Search bar */

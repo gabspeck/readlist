@@ -23,7 +23,7 @@ function loadInt(key: string): number {
 
 // ─── Reactive state ───────────────────────────────────────────────────────────
 
-export type SyncStatus = 'disconnected' | 'idle' | 'syncing' | 'success' | 'error';
+export type SyncStatus = 'disconnected' | 'idle' | 'syncing' | 'success' | 'error' | 'needs_auth';
 
 // Start as 'idle' if the user previously connected, avoiding a UI flash on load
 const initialStatus: SyncStatus = (() => {
@@ -222,7 +222,7 @@ async function performSync(silent: boolean): Promise<void> {
 		syncStatus.set('success');
 	} catch (e) {
 		if (silent) {
-			syncStatus.set('idle');
+			syncStatus.set('needs_auth');
 		} else {
 			syncError.set(e instanceof Error ? e.message : 'Sync failed');
 			syncStatus.set('error');

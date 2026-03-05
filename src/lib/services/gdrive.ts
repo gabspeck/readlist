@@ -55,9 +55,11 @@ export function getAccessToken(clientId: string, silent = false): Promise<string
 			},
 			error_callback: (err) => reject(new Error(err.message ?? 'GIS error'))
 		});
-		// prompt:'' = skip consent screen if already granted (silent-ish)
-		// prompt:'none' would fully suppress popup but causes errors in some cases
-		client.requestAccessToken({ prompt: silent ? '' : undefined });
+		// prompt:'none' = fully suppress any UI; GIS calls error_callback if it
+		// can't get a token without user interaction, which we catch and handle.
+		// prompt:undefined = allow the normal consent/account-picker popup, only
+		// used for explicit user-triggered actions (connect, manual sync).
+		client.requestAccessToken({ prompt: silent ? 'none' : undefined });
 	});
 }
 

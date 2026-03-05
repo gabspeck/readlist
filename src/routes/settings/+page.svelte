@@ -148,7 +148,9 @@
 				<p class="section-desc">
 					Syncing to Google Drive. Last synced: {formatTs($lastSynced)}.
 				</p>
-				{#if $syncStatus === 'error'}
+				{#if $syncStatus === 'needs_auth'}
+					<p class="sync-warning">Google session expired — click "Sync now" to reconnect.</p>
+				{:else if $syncStatus === 'error'}
 					<p class="sync-error">{$syncError}</p>
 				{/if}
 				<div class="data-buttons">
@@ -360,6 +362,12 @@
 
 	.file-input {
 		display: none;
+	}
+
+	.sync-warning {
+		font-size: 0.875rem;
+		color: #b45309;
+		margin-bottom: 0.875rem;
 	}
 
 	.sync-error {
