@@ -3,14 +3,14 @@
 	import { goto } from '$app/navigation';
 	import { appTheme, cycleTheme } from '$lib/stores/theme';
 	import { searchQuery } from '$lib/stores/articles';
-	import { syncStatus, manualSync } from '$lib/stores/sync';
+	import { syncStatus, hasPendingChanges, manualSync } from '$lib/stores/sync';
 	import type { FilterMode } from '$lib/types';
 
-	let reconnecting = $state(false);
+	let syncing = $state(false);
 
-	async function reconnect(): Promise<void> {
-		reconnecting = true;
-		try { await manualSync(); } finally { reconnecting = false; }
+	async function handleSync(): Promise<void> {
+		syncing = true;
+		try { await manualSync(); } finally { syncing = false; }
 	}
 
 	let { onAdd, hasArticles = false }: { onAdd: () => void; hasArticles?: boolean } = $props();
@@ -79,9 +79,25 @@
 			<a href="/" class="brand-link">Readlist</a>
 
 			<div class="nav-actions">
-				{#if $syncStatus === 'needs_auth'}
-					<button class="reconnect-btn" onclick={reconnect} disabled={reconnecting}>
-						{reconnecting ? 'Syncing…' : 'Reconnect Drive'}
+				{#if $syncStatus !== 'disconnected'}
+					<button
+						class="icon-btn sync-btn"
+						class:sync-pending={$hasPendingChanges && $syncStatus !== 'syncing' && $syncStatus !== 'error'}
+						class:sync-error={$syncStatus === 'error' || $syncStatus === 'needs_auth'}
+						class:sync-spinning={syncing || $syncStatus === 'syncing'}
+						onclick={handleSync}
+						disabled={syncing || $syncStatus === 'syncing'}
+						aria-label="Sync with Google Drive"
+						title={$syncStatus === 'needs_auth' ? 'Session expired — click to reconnect' : $syncStatus === 'error' ? 'Sync failed — click to retry' : $hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
+					>
+						<svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="sync-icon">
+							<path d="M3 10a7 7 0 0 1 11.9-5M17 10a7 7 0 0 1-11.9 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+							<path d="M14 5l1 -2.5 1.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="M6 15l-1 2.5-1.5-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						{#if $hasPendingChanges && $syncStatus !== 'syncing'}
+							<span class="sync-dot" aria-hidden="true"></span>
+						{/if}
 					</button>
 				{/if}
 				{#if isHome}
@@ -220,25 +236,39 @@
 		color: var(--color-accent);
 	}
 
-	.reconnect-btn {
-		padding: 0.3rem 0.625rem;
-		background: color-mix(in srgb, #f59e0b 15%, transparent);
+	.sync-btn {
+		position: relative;
+	}
+
+	.sync-btn.sync-pending {
+		color: var(--color-accent);
+	}
+
+	.sync-btn.sync-error {
 		color: #b45309;
-		border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
-		border-radius: var(--radius-md);
-		font-size: 0.75rem;
-		font-weight: 500;
-		cursor: pointer;
-		white-space: nowrap;
 	}
 
-	.reconnect-btn:hover:not(:disabled) {
-		background: color-mix(in srgb, #f59e0b 25%, transparent);
+	.sync-dot {
+		position: absolute;
+		top: 7px;
+		right: 7px;
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--color-accent);
+		border: 1.5px solid var(--color-surface);
 	}
 
-	.reconnect-btn:disabled {
-		opacity: 0.6;
-		cursor: default;
+	.sync-btn.sync-error .sync-dot {
+		background: #f59e0b;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.sync-spinning .sync-icon {
+		animation: spin 1s linear infinite;
 	}
 
 	/* Search bar */

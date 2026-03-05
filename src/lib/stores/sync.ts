@@ -25,7 +25,6 @@ function loadInt(key: string): number {
 
 export type SyncStatus = 'disconnected' | 'idle' | 'syncing' | 'success' | 'error' | 'needs_auth';
 
-// Start as 'idle' if the user previously connected, avoiding a UI flash on load
 const initialStatus: SyncStatus = (() => {
 	try { return localStorage.getItem(LS_CONNECTED) ? 'idle' : 'disconnected'; } catch { return 'disconnected'; }
 })();
@@ -34,27 +33,21 @@ export const syncStatus = writable<SyncStatus>(initialStatus);
 export const syncError = writable<string>('');
 export const lastSynced = writable<number | null>(null);
 
-// ─── Auto-sync ────────────────────────────────────────────────────────────────
+// True whenever local state has changed since the last successful sync,
+// or on page load when Drive is connected (remote may have new changes too).
+export const hasPendingChanges = writable<boolean>(
+	(() => { try { return !!localStorage.getItem(LS_CONNECTED); } catch { return false; } })()
+);
 
-let autoSyncTimer: ReturnType<typeof setTimeout> | undefined;
-
-export function scheduleSync(): void {
-	if (!localStorage.getItem(LS_CONNECTED)) return;
-	// Speculatively refresh the token while still in the user-gesture context.
-	// If the token is valid this is a no-op (returns the cached value instantly).
-	// If it's expired, GIS can show its account-picker popup here — the browser
-	// allows it because we're inside a user-interaction call stack. By the time
-	// the setTimeout fires the token is already cached and no popup is needed.
-	drive.loadGisScript()
-		.then(() => drive.getAccessToken(PUBLIC_GOOGLE_CLIENT_ID, true))
-		.catch(() => {});
-	clearTimeout(autoSyncTimer);
-	autoSyncTimer = setTimeout(() => { performSync(true); }, 3000);
+// Call this whenever a local change happens that should be synced.
+export function markPending(): void {
+	if (localStorage.getItem(LS_CONNECTED)) hasPendingChanges.set(true);
 }
 
-function watchForChanges(): void {
+// Watch stores and mark pending whenever they change.
+function watchForPending(): void {
 	let skip = 3; // skip initial emission from each of the 3 subscriptions
-	const onchange = () => { if (skip > 0) { skip--; return; } scheduleSync(); };
+	const onchange = () => { if (skip > 0) { skip--; return; } markPending(); };
 	articles.subscribe(onchange);
 	readerSettings.subscribe(onchange);
 	appTheme.subscribe(onchange);
@@ -68,18 +61,17 @@ export async function initSync(): Promise<void> {
 	lastSynced.set(loadLastSynced());
 	drive.loadGisScript().catch(() => {}); // preload in background
 	if (drive.hasValidToken()) {
-		// Token is already in memory (restored from localStorage) — sync
-		// immediately without any GIS call or popup.
+		// Token is in localStorage — sync immediately, no popup needed.
 		try { await performSync(true); } catch { syncStatus.set('idle'); }
 	}
-	watchForChanges();
+	watchForPending();
 }
 
 export async function connectDrive(): Promise<void> {
 	localStorage.setItem(LS_CONNECTED, '1');
 	await drive.loadGisScript();
 	await performSync(false);
-	watchForChanges();
+	watchForPending();
 }
 
 export function disconnectDrive(): void {
@@ -90,6 +82,7 @@ export function disconnectDrive(): void {
 	syncStatus.set('disconnected');
 	lastSynced.set(null);
 	syncError.set('');
+	hasPendingChanges.set(false);
 }
 
 export async function manualSync(): Promise<void> {
@@ -228,6 +221,7 @@ async function performSync(silent: boolean): Promise<void> {
 		localStorage.setItem(LS_LAST_SYNCED, String(now));
 		lastSynced.set(now);
 		syncStatus.set('success');
+		hasPendingChanges.set(false);
 	} catch (e) {
 		if (silent) {
 			syncStatus.set('needs_auth');
