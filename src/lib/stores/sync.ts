@@ -34,6 +34,24 @@ export const syncStatus = writable<SyncStatus>(initialStatus);
 export const syncError = writable<string>('');
 export const lastSynced = writable<number | null>(null);
 
+// ─── Auto-sync ────────────────────────────────────────────────────────────────
+
+let autoSyncTimer: ReturnType<typeof setTimeout> | undefined;
+
+export function scheduleSync(): void {
+	if (!localStorage.getItem(LS_CONNECTED)) return;
+	clearTimeout(autoSyncTimer);
+	autoSyncTimer = setTimeout(() => { performSync(true); }, 3000);
+}
+
+function watchForChanges(): void {
+	let skip = 3; // skip initial emission from each of the 3 subscriptions
+	const onchange = () => { if (skip > 0) { skip--; return; } scheduleSync(); };
+	articles.subscribe(onchange);
+	readerSettings.subscribe(onchange);
+	appTheme.subscribe(onchange);
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function initSync(): Promise<void> {
@@ -46,12 +64,14 @@ export async function initSync(): Promise<void> {
 	} catch {
 		syncStatus.set('idle');
 	}
+	watchForChanges();
 }
 
 export async function connectDrive(): Promise<void> {
 	localStorage.setItem(LS_CONNECTED, '1');
 	await drive.loadGisScript();
 	await performSync(false);
+	watchForChanges();
 }
 
 export function disconnectDrive(): void {

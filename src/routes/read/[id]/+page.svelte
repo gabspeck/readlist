@@ -7,6 +7,7 @@
 	import { getArticle } from '$lib/services/storage';
 	import ReaderControls from '$lib/components/ReaderControls.svelte';
 	import { copyToClipboard } from '$lib/services/share';
+	import { scheduleSync } from '$lib/stores/sync';
 	import type { Article } from '$lib/types';
 
 	let article = $state<Article | null>(null);
@@ -64,7 +65,7 @@
 
 				// Throttle saves to every 500 ms
 				clearTimeout(saveTimer);
-				saveTimer = setTimeout(() => saveProgress(id, progress), 500);
+				saveTimer = setTimeout(() => { saveProgress(id, progress); scheduleSync(); }, 500);
 
 				// Mark read and clear progress on first completion
 				if (progress === 100 && canMarkRead) {
