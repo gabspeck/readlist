@@ -1,5 +1,6 @@
 import { Readability } from '@mozilla/readability';
 import type { Article } from '$lib/types';
+import { preprocessors } from './dom-preprocessors';
 
 const DEFAULT_PROXY = 'https://corsproxy.io/?url=';
 
@@ -32,7 +33,11 @@ export async function parseArticle(url: string): Promise<Omit<Article, 'id' | 's
 	base.href = url;
 	doc.head.prepend(base);
 
-	const reader = new Readability(doc);
+	// Run preprocessors before Readability strips styling information
+	for (const p of preprocessors) p.mark(doc);
+	const reader = new Readability(doc, {
+		classesToPreserve: preprocessors.map((p) => p.className),
+	});
 	const result = reader.parse();
 
 	if (!result) {
