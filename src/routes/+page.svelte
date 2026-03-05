@@ -96,6 +96,48 @@
 		selectedIds = new Set();
 	}
 
+	async function markReadSelected(isRead: boolean): Promise<void> {
+		const ids = [...selectedIds];
+		await Promise.all(ids.map((id) => markRead(id, isRead)));
+		const n = ids.length;
+		toastContainer?.show(`Marked ${n} article${n !== 1 ? 's' : ''} as ${isRead ? 'read' : 'unread'}`, {
+			action: 'Undo',
+			onAction: () => Promise.all(ids.map((id) => markRead(id, !isRead)))
+		});
+		clearSelection();
+	}
+
+	async function archiveSelected(): Promise<void> {
+		const ids = [...selectedIds];
+		await Promise.all(ids.map((id) => archiveArticle(id)));
+		const n = ids.length;
+		toastContainer?.show(`Archived ${n} article${n !== 1 ? 's' : ''}`, {
+			action: 'Undo',
+			onAction: () => Promise.all(ids.map((id) => unarchiveArticle(id)))
+		});
+		clearSelection();
+	}
+
+	async function unarchiveSelected(): Promise<void> {
+		const ids = [...selectedIds];
+		await Promise.all(ids.map((id) => unarchiveArticle(id)));
+		const n = ids.length;
+		toastContainer?.show(`Restored ${n} article${n !== 1 ? 's' : ''}`);
+		clearSelection();
+	}
+
+	async function deleteSelected(): Promise<void> {
+		const ids = [...selectedIds];
+		const deleted = await Promise.all(ids.map((id) => removeArticle(id)));
+		const removed = deleted.filter(Boolean);
+		const n = ids.length;
+		toastContainer?.show(`Deleted ${n} article${n !== 1 ? 's' : ''}`, {
+			action: 'Undo',
+			onAction: async () => { for (const a of removed) if (a) await addArticle(a); }
+		});
+		clearSelection();
+	}
+
 	async function exportAsEpub(): Promise<void> {
 		const toExport = $articles.filter((a) => selectedIds.has(a.id));
 		if (!toExport.length) return;
@@ -143,7 +185,7 @@
 		{:else if visibleCount === 0}
 			<EmptyState onAdd={() => { showAddDialog = true; }} />
 		{:else}
-			<div class="list-header" role="toolbar" aria-label="Selection controls">
+			<div class="list-header">
 				<label class="select-all-label">
 					<input
 						type="checkbox"
@@ -176,10 +218,26 @@
 						<option value="progress">In progress</option>
 						<option value="lastopened">Last opened</option>
 					</select>
+				{:else}
+					<button class="sel-btn sel-clear" onclick={clearSelection}>Clear</button>
 				{/if}
+			</div>
 
-				{#if someSelected}
-					<div class="sel-actions">
+			{#if someSelected}
+				<div class="sel-action-bar" role="toolbar" aria-label="Selection actions">
+					{#if $filterMode === 'archived'}
+						<button class="sel-btn" onclick={unarchiveSelected}>Restore</button>
+					{:else if $filterMode === 'read'}
+						<button class="sel-btn" onclick={() => markReadSelected(false)}>Mark unread</button>
+						<button class="sel-btn" onclick={archiveSelected}>Archive</button>
+					{:else}
+						<button class="sel-btn" onclick={() => markReadSelected(true)}>Mark read</button>
+						<button class="sel-btn" onclick={archiveSelected}>Archive</button>
+					{/if}
+					<button class="sel-btn sel-delete" onclick={deleteSelected}>Delete</button>
+
+					{#if $filterMode !== 'archived'}
+						<span class="sel-divider" aria-hidden="true"></span>
 						<button
 							class="sel-btn sel-export"
 							onclick={exportAsEpub}
@@ -197,7 +255,6 @@
 								Export EPUB
 							{/if}
 						</button>
-
 						<button
 							class="sel-btn sel-kindle-help"
 							onclick={() => { showKindleHelp = true; }}
@@ -210,11 +267,9 @@
 							</svg>
 							Kindle
 						</button>
-
-						<button class="sel-btn sel-clear" onclick={clearSelection}>Clear</button>
-					</div>
-				{/if}
-			</div>
+					{/if}
+				</div>
+			{/if}
 
 			<ul class="article-list" aria-label="Articles">
 				{#each $filteredArticles as article (article.id)}
@@ -250,9 +305,10 @@
 
 <style>
 	.app-shell {
-		min-height: 100vh;
+		height: 100%;
 		display: flex;
 		flex-direction: column;
+		overflow: hidden;
 	}
 
 	.main {
@@ -260,6 +316,9 @@
 		max-width: 720px;
 		width: 100%;
 		margin: 0 auto;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		min-height: 0;
 	}
 
 	.article-list {
@@ -273,9 +332,9 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.5rem 1rem;
+		padding: 0 1rem;
 		border-bottom: 1px solid var(--color-border);
-		min-height: 40px;
+		height: 40px;
 	}
 
 	.select-all-label {
@@ -324,12 +383,21 @@
 		text-overflow: ellipsis;
 	}
 
-	/* Selection actions */
-	.sel-actions {
+	/* Selection action bar */
+	.sel-action-bar {
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
-		flex-shrink: 0;
+		padding: 0 0.625rem;
+		height: 36px;
+		border-bottom: 1px solid var(--color-border);
+		overflow-x: auto;
+		scrollbar-width: none;
+		touch-action: pan-x;
+	}
+
+	.sel-action-bar::-webkit-scrollbar {
+		display: none;
 	}
 
 	.sel-btn {
@@ -378,6 +446,22 @@
 	.sel-kindle-help:hover {
 		background: var(--color-surface-hover);
 		color: var(--color-text);
+	}
+
+	.sel-delete {
+		color: var(--color-danger);
+	}
+
+	.sel-delete:hover {
+		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+	}
+
+	.sel-divider {
+		width: 1px;
+		height: 18px;
+		background: var(--color-border);
+		flex-shrink: 0;
+		margin: 0 0.125rem;
 	}
 
 	.sel-clear {

@@ -213,8 +213,11 @@
 
 <style>
 	.settings-shell {
-		min-height: 100vh;
+		height: 100%;
 		background: var(--color-bg);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
 	}
 
 	.settings-header {
@@ -254,9 +257,14 @@
 	}
 
 	.settings-main {
+		flex: 1;
 		max-width: 600px;
+		width: 100%;
 		margin: 0 auto;
 		padding: 0 1rem 4rem;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		min-height: 0;
 	}
 
 	.settings-section {

@@ -30,8 +30,8 @@
 		const saved = localStorage.getItem(progressKey(articleId));
 		if (!saved) return;
 		const pct = parseInt(saved) / 100;
-		const total = articleEl.offsetHeight - window.innerHeight;
-		if (total > 0) window.scrollTo({ top: pct * total, behavior: 'instant' });
+		const total = articleEl.scrollHeight - articleEl.clientHeight;
+		if (total > 0) articleEl.scrollTo({ top: pct * total, behavior: 'instant' });
 	}
 
 	function clearProgress(articleId: string): void {
@@ -59,10 +59,9 @@
 
 			const handleScroll = () => {
 				if (!articleEl) return;
-				const rect = articleEl.getBoundingClientRect();
-				const total = articleEl.offsetHeight - window.innerHeight;
+				const total = articleEl.scrollHeight - articleEl.clientHeight;
 				if (total <= 0) { progress = 100; return; }
-				progress = Math.min(100, Math.max(0, Math.round((-rect.top / total) * 100)));
+				progress = Math.min(100, Math.max(0, Math.round((articleEl.scrollTop / total) * 100)));
 
 				// Throttle saves to every 500 ms
 				clearTimeout(saveTimer);
@@ -75,9 +74,10 @@
 				}
 			};
 
-			window.addEventListener('scroll', handleScroll, { passive: true });
+			if (!articleEl) return;
+			articleEl.addEventListener('scroll', handleScroll, { passive: true });
 			cleanup = () => {
-				window.removeEventListener('scroll', handleScroll);
+				articleEl?.removeEventListener('scroll', handleScroll);
 				clearTimeout(saveTimer);
 			};
 		});
@@ -206,10 +206,12 @@
 
 <style>
 	.reader-shell {
-		min-height: 100vh;
+		height: 100%;
 		background: var(--color-bg);
 		color: var(--color-text);
-		position: relative;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
 	}
 
 	.progress-bar {
@@ -263,8 +265,9 @@
 	.web-frame {
 		display: block;
 		width: 100%;
-		height: calc(100vh - var(--nav-height));
+		flex: 1;
 		border: none;
+		min-height: 0;
 	}
 
 	.header-site {
@@ -296,6 +299,10 @@
 	}
 
 	.reader-main {
+		flex: 1;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		min-height: 0;
 		padding: 2rem 1rem 4rem;
 	}
 
@@ -439,6 +446,11 @@
 
 	.article-body :global(li) {
 		margin-bottom: 0.25em;
+	}
+
+	.article-body :global(.readlist-sc),
+	.article-body :global(abbr) {
+		font-variant: small-caps;
 	}
 
 	.not-found {
