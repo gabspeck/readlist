@@ -1,12 +1,6 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-cloudflare';
 
 /** @type {import('@sveltejs/kit').Config} */
-const config = {
-	kit: {
-		adapter: adapter({
-			fallback: 'index.html' // SPA mode for client-side routing
-		})
-	}
-};
+const config = { kit: { adapter: adapter() } };
 
 export default config;
