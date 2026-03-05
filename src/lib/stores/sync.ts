@@ -1,4 +1,5 @@
 import { writable, get } from 'svelte/store';
+import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 import * as drive from '$lib/services/gdrive';
 import * as storage from '$lib/services/storage';
 import { articles } from '$lib/stores/articles';
@@ -8,12 +9,10 @@ import type { SyncFile } from '$lib/types';
 
 // ─── localStorage keys ────────────────────────────────────────────────────────
 
-const LS_CLIENT_ID = 'gdrive_client_id';
+const LS_CONNECTED = 'gdrive_connected';
 const LS_FILE_ID = 'gdrive_file_id';
 const LS_LAST_SYNCED = 'gdrive_last_synced';
 
-function loadClientId(): string { return localStorage.getItem(LS_CLIENT_ID) ?? ''; }
-function saveClientId(id: string): void { localStorage.setItem(LS_CLIENT_ID, id); }
 function loadFileId(): string | null { return localStorage.getItem(LS_FILE_ID); }
 function saveFileId(id: string): void { localStorage.setItem(LS_FILE_ID, id); }
 function loadLastSynced(): number | null { const v = localStorage.getItem(LS_LAST_SYNCED); return v ? parseInt(v) : null; }
@@ -25,58 +24,57 @@ function loadInt(key: string): number {
 
 export type SyncStatus = 'disconnected' | 'idle' | 'syncing' | 'success' | 'error';
 
-export const syncStatus = writable<SyncStatus>('disconnected');
+// Start as 'idle' if the user previously connected, avoiding a UI flash on load
+const initialStatus: SyncStatus = (() => {
+	try { return localStorage.getItem(LS_CONNECTED) ? 'idle' : 'disconnected'; } catch { return 'disconnected'; }
+})();
+
+export const syncStatus = writable<SyncStatus>(initialStatus);
 export const syncError = writable<string>('');
 export const lastSynced = writable<number | null>(null);
-export const syncClientId = writable<string>('');
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function initSync(): Promise<void> {
-	const clientId = loadClientId();
-	if (!clientId) return;
-	syncClientId.set(clientId);
+	if (!PUBLIC_GOOGLE_CLIENT_ID) return;
+	if (!localStorage.getItem(LS_CONNECTED)) return;
 	lastSynced.set(loadLastSynced());
 	try {
 		await drive.loadGisScript();
-		await performSync(clientId, true);
+		await performSync(true);
 	} catch {
 		syncStatus.set('idle');
 	}
 }
 
-export async function connectDrive(clientId: string): Promise<void> {
-	saveClientId(clientId);
-	syncClientId.set(clientId);
+export async function connectDrive(): Promise<void> {
+	localStorage.setItem(LS_CONNECTED, '1');
 	await drive.loadGisScript();
-	await performSync(clientId, false);
+	await performSync(false);
 }
 
 export function disconnectDrive(): void {
-	localStorage.removeItem(LS_CLIENT_ID);
+	localStorage.removeItem(LS_CONNECTED);
 	localStorage.removeItem(LS_FILE_ID);
 	localStorage.removeItem(LS_LAST_SYNCED);
 	drive.clearTokenCache();
-	syncClientId.set('');
 	syncStatus.set('disconnected');
 	lastSynced.set(null);
 	syncError.set('');
 }
 
 export async function manualSync(): Promise<void> {
-	const clientId = get(syncClientId);
-	if (!clientId) return;
-	await performSync(clientId, false);
+	await performSync(false);
 }
 
 // ─── Core sync routine ────────────────────────────────────────────────────────
 
-async function performSync(clientId: string, silent: boolean): Promise<void> {
+async function performSync(silent: boolean): Promise<void> {
 	syncStatus.set('syncing');
 	syncError.set('');
 
 	try {
-		const token = await drive.getAccessToken(clientId, silent);
+		const token = await drive.getAccessToken(PUBLIC_GOOGLE_CLIENT_ID, silent);
 
 		// 1. Find / download remote sync file
 		let fileId = loadFileId();

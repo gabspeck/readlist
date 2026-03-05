@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 	import { corsProxy } from '$lib/stores/settings';
 	import { getAllArticles } from '$lib/services/storage';
 	import { saveArticle } from '$lib/services/storage';
 	import {
-		syncStatus, syncError, lastSynced, syncClientId,
+		syncStatus, syncError, lastSynced,
 		connectDrive, disconnectDrive, manualSync
 	} from '$lib/stores/sync';
 
@@ -16,16 +17,12 @@
 			: null
 	);
 
-	let clientIdInput = $state($syncClientId);
 	let connecting = $state(false);
 	let syncing = $state(false);
 
-	$effect(() => { clientIdInput = $syncClientId; });
-
 	async function handleConnect(): Promise<void> {
-		if (!clientIdInput.trim()) return;
 		connecting = true;
-		try { await connectDrive(clientIdInput.trim()); }
+		try { await connectDrive(); }
 		finally { connecting = false; }
 	}
 
@@ -143,10 +140,11 @@
 			</div>
 		</section>
 
+		{#if PUBLIC_GOOGLE_CLIENT_ID}
 		<section class="settings-section">
 			<h2 class="section-title">Google Drive Sync</h2>
 
-			{#if $syncClientId}
+			{#if $syncStatus !== 'disconnected'}
 				<p class="section-desc">
 					Syncing to Google Drive. Last synced: {formatTs($lastSynced)}.
 				</p>
@@ -165,30 +163,16 @@
 				</div>
 			{:else}
 				<p class="section-desc">
-					Sync your reading list and settings across devices using your own Google Drive storage.
-					You'll need a Google OAuth Client ID — create one in the
-					<a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>
-					(enable the Drive API and add your app's URL as an authorized JavaScript origin).
+					Sync your reading list and settings across devices using your Google Drive storage.
 				</p>
-				<div class="proxy-row">
-					<input
-						type="text"
-						bind:value={clientIdInput}
-						class="proxy-input"
-						placeholder="xxxxxx.apps.googleusercontent.com"
-						spellcheck={false}
-						autocomplete="off"
-					/>
-					<button
-						class="btn-save"
-						onclick={handleConnect}
-						disabled={connecting || !clientIdInput.trim()}
-					>
-						{connecting ? 'Connecting…' : 'Connect'}
+				<div class="data-buttons">
+					<button class="btn-save" onclick={handleConnect} disabled={connecting}>
+						{connecting ? 'Connecting…' : 'Connect Google Drive'}
 					</button>
 				</div>
 			{/if}
 		</section>
+		{/if}
 
 		<section class="settings-section">
 			<h2 class="section-title">Bookmarklet</h2>
