@@ -83,11 +83,12 @@
 					<button
 						class="icon-btn sync-btn"
 						class:sync-pending={$hasPendingChanges && $syncStatus !== 'syncing'}
+						class:sync-error={$syncStatus === 'error' || $syncStatus === 'needs_auth'}
 						class:sync-spinning={syncing || $syncStatus === 'syncing'}
 						onclick={handleSync}
 						disabled={syncing || $syncStatus === 'syncing'}
 						aria-label="Sync with Google Drive"
-						title={$hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
+						title={$syncStatus === 'error' || $syncStatus === 'needs_auth' ? 'Sync failed — click to retry' : $hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
 					>
 						<svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="sync-icon">
 							<path d="M3 10a7 7 0 0 1 11.9-5M17 10a7 7 0 0 1-11.9 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -241,6 +242,10 @@
 
 	.sync-btn.sync-pending {
 		color: var(--color-accent);
+	}
+
+	.sync-btn.sync-error {
+		color: #b45309;
 	}
 
 	.sync-dot {
