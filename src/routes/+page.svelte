@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import ArticleCard from '$lib/components/ArticleCard.svelte';
 	import AddArticleDialog from '$lib/components/AddArticleDialog.svelte';
@@ -9,6 +10,7 @@
 	import {
 		articles,
 		filteredArticles,
+		filterMode,
 		isLoading,
 		loadArticles,
 		addArticle,
@@ -19,6 +21,14 @@
 		sortMode
 	} from '$lib/stores/articles';
 	import { exportArticlesAsEpub } from '$lib/services/epub';
+	import type { FilterMode } from '$lib/types';
+
+	const validFilters = new Set<FilterMode>(['all', 'unread', 'read', 'archived']);
+
+	$effect(() => {
+		const param = $page.url.searchParams.get('filter') as FilterMode | null;
+		filterMode.set(param && validFilters.has(param) ? param : 'all');
+	});
 
 	let showAddDialog = $state(false);
 	let showKindleHelp = $state(false);

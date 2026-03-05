@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { filterMode } from '$lib/stores/articles';
+	import { goto } from '$app/navigation';
 	import { appTheme, cycleTheme } from '$lib/stores/theme';
 	import type { FilterMode } from '$lib/types';
 
@@ -14,6 +14,14 @@
 	];
 
 	let isHome = $derived($page.url.pathname === '/');
+	let activeFilter = $derived(
+		($page.url.searchParams.get('filter') ?? 'all') as FilterMode
+	);
+
+	function setFilter(mode: FilterMode): void {
+		const url = mode === 'all' ? '/' : `/?filter=${mode}`;
+		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+	}
 </script>
 
 <nav class="nav" aria-label="Main navigation">
@@ -69,10 +77,10 @@
 			{#each filters as f}
 				<button
 					role="tab"
-					aria-selected={$filterMode === f.mode}
+					aria-selected={activeFilter === f.mode}
 					class="tab"
-					class:active={$filterMode === f.mode}
-					onclick={() => filterMode.set(f.mode)}
+					class:active={activeFilter === f.mode}
+					onclick={() => setFilter(f.mode)}
 				>
 					{f.label}
 				</button>
