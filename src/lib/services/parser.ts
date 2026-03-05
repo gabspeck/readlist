@@ -44,14 +44,22 @@ export async function parseArticle(url: string): Promise<Omit<Article, 'id' | 's
 		throw new Error('Could not parse article content. The page may not contain readable text.');
 	}
 
+	// Make all links open in a new tab
+	const contentDoc = new DOMParser().parseFromString(result.content ?? '', 'text/html');
+	for (const a of contentDoc.querySelectorAll('a[href]')) {
+		a.setAttribute('target', '_blank');
+		a.setAttribute('rel', 'noopener noreferrer');
+	}
+	const content = contentDoc.body.innerHTML;
+
 	return {
 		url,
 		title: result.title || 'Untitled',
 		author: result.byline || '',
 		publishedAt: result.publishedTime || null,
 		excerpt: result.excerpt || '',
-		content: result.content ?? '',
+		content,
 		siteName: result.siteName || new URL(url).hostname,
-		wordCount: countWords(result.content ?? '')
+		wordCount: countWords(content)
 	};
 }
