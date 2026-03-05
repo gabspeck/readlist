@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 
-const PUBLIC_GOOGLE_CLIENT_ID: string = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
+import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 import * as drive from '$lib/services/gdrive';
 import * as storage from '$lib/services/storage';
 import { articles } from '$lib/stores/articles';

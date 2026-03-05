@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	const PUBLIC_GOOGLE_CLIENT_ID: string = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
+	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 	import { corsProxy } from '$lib/stores/settings';
 	import { getAllArticles } from '$lib/services/storage';
 	import { saveArticle } from '$lib/services/storage';
