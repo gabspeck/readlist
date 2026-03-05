@@ -69,3 +69,8 @@ export async function deleteHighlight(id: string): Promise<void> {
 	const db = await getDB();
 	await db.delete('highlights', id);
 }
+
+/** Reset the DB singleton — for use in tests only. */
+export function _resetForTests(): void {
+	dbPromise = null;
+}
