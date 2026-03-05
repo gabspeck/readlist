@@ -40,5 +40,5 @@ export interface ReaderSettings {
 	theme: 'system' | 'light' | 'sepia' | 'dark';
 }
 
-export type FilterMode = 'all' | 'unread' | 'read' | 'archived';
+export type FilterMode = 'all' | 'unread' | 'inprogress' | 'read' | 'archived';
 export type SortMode = 'newest' | 'oldest' | 'title' | 'length' | 'progress' | 'lastopened';

@@ -37,6 +37,7 @@ export const filteredArticles = derived(
 			if ($tag && !a.tags.includes($tag)) return false;
 			if ($filter === 'all') { if (a.archived) return false; }
 			else if ($filter === 'unread') { if (a.isRead || a.archived) return false; }
+			else if ($filter === 'inprogress') { if (a.archived || a.isRead || readLocalInt(`readprogress:${a.id}`) === 0) return false; }
 			else if ($filter === 'read') { if (!a.isRead || a.archived) return false; }
 			else if ($filter === 'archived') { if (!a.archived) return false; }
 			if (q) {

@@ -6,6 +6,7 @@
 		article,
 		selected = false,
 		readingProgress = 0,
+		showStatus = false,
 		onSelect,
 		onArchive,
 		onDelete,
@@ -14,6 +15,7 @@
 		article: Article;
 		selected?: boolean;
 		readingProgress?: number;
+		showStatus?: boolean;
 		onSelect?: (id: string) => void;
 		onArchive?: (id: string) => void;
 		onDelete?: (id: string) => void;
@@ -77,6 +79,13 @@
 		<div class="card-meta">
 			<span class="site-name">{article.siteName || new URL(article.url).hostname}</span>
 			<span class="date">{formatDate(article.savedAt)}</span>
+			{#if showStatus}
+				{#if article.isRead}
+					<span class="status-badge read" title="Read">Read</span>
+				{:else}
+					<span class="status-badge unread" title="Unread">Unread</span>
+				{/if}
+			{/if}
 		</div>
 
 		<h2 class="card-title" class:read={article.isRead}>{article.title}</h2>
@@ -216,6 +225,25 @@
 		font-size: 0.75rem;
 		color: var(--color-text-muted);
 		flex-shrink: 0;
+	}
+
+	.status-badge {
+		font-size: 0.6875rem;
+		font-weight: 600;
+		padding: 0.1rem 0.375rem;
+		border-radius: 999px;
+		flex-shrink: 0;
+		letter-spacing: 0.02em;
+	}
+
+	.status-badge.unread {
+		background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+		color: var(--color-accent);
+	}
+
+	.status-badge.read {
+		background: var(--color-surface-raised);
+		color: var(--color-text-muted);
 	}
 
 	.card-title {

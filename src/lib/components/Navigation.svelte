@@ -10,6 +10,7 @@
 	const filters: { mode: FilterMode; label: string }[] = [
 		{ mode: 'all', label: 'All' },
 		{ mode: 'unread', label: 'Unread' },
+		{ mode: 'inprogress', label: 'In Progress' },
 		{ mode: 'read', label: 'Read' },
 		{ mode: 'archived', label: 'Archived' }
 	];

@@ -53,6 +53,7 @@
 
 			localStorage.setItem(`lastopenat:${id}`, String(Date.now()));
 
+			let canMarkRead = !found.isRead;
 			let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
 			const handleScroll = () => {
@@ -65,8 +66,9 @@
 				clearTimeout(saveTimer);
 				saveTimer = setTimeout(() => saveProgress(id, progress), 500);
 
-				// Clear saved position and mark read when finished
-				if (progress === 100) {
+				// Mark read and clear progress on first completion
+				if (progress === 100 && canMarkRead) {
+					canMarkRead = false;
 					clearProgress(id);
 					markRead(id, true);
 				}
@@ -125,7 +127,11 @@
 				<path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 			</svg>
 		</button>
-		<span class="header-site">{article.siteName || new URL(article.url).hostname}</span>
+		<div class="header-info">
+			<span class="header-site">{article.siteName || new URL(article.url).hostname}</span>
+			<span class="header-title">{article.title}</span>
+			{#if article.author}<span class="header-author">{article.author}</span>{/if}
+		</div>
 
 		<button class="header-btn" aria-label="Share" onclick={shareArticle}>
 			{#if copied}
@@ -264,8 +270,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0 1rem;
-		height: var(--nav-height);
+		padding: 0.5rem 1rem;
+		min-height: var(--nav-height);
 	}
 
 	.back-btn,
@@ -301,14 +307,45 @@
 		min-height: 0;
 	}
 
-	.header-site {
+	.header-info {
 		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		overflow: hidden;
+		min-width: 0;
+		gap: 0.1rem;
+	}
+
+	.header-site {
+		font-size: 0.6875rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--color-accent);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
+	}
+
+	.header-title {
 		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
+	}
+
+	.header-author {
+		font-size: 0.75rem;
 		color: var(--color-text-muted);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		text-align: center;
+		max-width: 100%;
 	}
 
 	.controls-backdrop {

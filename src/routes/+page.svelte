@@ -24,7 +24,7 @@
 	import { exportArticlesAsEpub } from '$lib/services/epub';
 	import type { FilterMode } from '$lib/types';
 
-	const validFilters = new Set<FilterMode>(['all', 'unread', 'read', 'archived']);
+	const validFilters = new Set<FilterMode>(['all', 'unread', 'inprogress', 'read', 'archived']);
 
 	$effect(() => {
 		const param = $page.url.searchParams.get('filter') as FilterMode | null;
@@ -279,6 +279,7 @@
 							{article}
 							selected={selectedIds.has(article.id)}
 							readingProgress={progressMap[article.id] ?? 0}
+							showStatus={$filterMode === 'all'}
 							onSelect={toggleSelect}
 							onArchive={handleArchive}
 							onDelete={handleDelete}
