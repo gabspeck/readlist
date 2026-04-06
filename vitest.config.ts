@@ -16,7 +16,7 @@ export default defineConfig({
 		alias: {
 			$lib: resolve(__dirname, 'src/lib'),
 			'$env/static/public': resolve(__dirname, 'src/tests/__mocks__/env.ts'),
-			'$app/stores': resolve(__dirname, 'src/tests/__mocks__/app-stores.ts'),
+			'$app/state': resolve(__dirname, 'src/tests/__mocks__/app-state.ts'),
 			'$app/navigation': resolve(__dirname, 'src/tests/__mocks__/app-navigation.ts')
 		}
 	}

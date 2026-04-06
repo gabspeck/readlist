@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { readerSettings, initReaderSettings } from '$lib/stores/reader';
 	import { markRead } from '$lib/stores/articles';
@@ -17,7 +17,7 @@
 	let progress = $state(0);
 	let articleEl = $state<HTMLElement | undefined>(undefined);
 
-	const id = $derived($page.params.id ?? '');
+	const id = $derived(page.params.id ?? '');
 
 	function progressKey(articleId: string): string {
 		return `readprogress:${articleId}`;

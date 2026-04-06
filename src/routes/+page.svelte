@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Navigation from '$lib/components/Navigation.svelte';
 	import ArticleCard from '$lib/components/ArticleCard.svelte';
 	import AddArticleDialog from '$lib/components/AddArticleDialog.svelte';
@@ -27,7 +27,7 @@
 	const validFilters = new Set<FilterMode>(['all', 'unread', 'inprogress', 'read', 'archived']);
 
 	$effect(() => {
-		const param = $page.url.searchParams.get('filter') as FilterMode | null;
+		const param = page.url.searchParams.get('filter') as FilterMode | null;
 		filterMode.set(param && validFilters.has(param) ? param : 'all');
 	});
 
