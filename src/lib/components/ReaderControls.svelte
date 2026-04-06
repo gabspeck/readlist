@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { readerSettings } from '$lib/stores/reader';
+	import { reader } from '$lib/stores/reader.svelte';
 
 	let { onClose }: { onClose: () => void } = $props();
 
@@ -32,9 +32,9 @@
 			{#each themes as t}
 				<button
 					class="theme-btn theme-{t.value}"
-					class:active={$readerSettings.theme === t.value}
-					onclick={() => readerSettings.update((s) => ({ ...s, theme: t.value }))}
-					aria-pressed={$readerSettings.theme === t.value}
+					class:active={reader.settings.theme === t.value}
+					onclick={() => reader.settings =({ ...reader.settings, theme: t.value })}
+					aria-pressed={reader.settings.theme === t.value}
 				>
 					{t.label}
 				</button>
@@ -48,9 +48,9 @@
 			{#each fonts as f}
 				<button
 					class="segment-btn"
-					class:active={$readerSettings.fontFamily === f.value}
-					onclick={() => readerSettings.update((s) => ({ ...s, fontFamily: f.value }))}
-					aria-pressed={$readerSettings.fontFamily === f.value}
+					class:active={reader.settings.fontFamily === f.value}
+					onclick={() => reader.settings =({ ...reader.settings, fontFamily: f.value })}
+					aria-pressed={reader.settings.fontFamily === f.value}
 					style="font-family: {f.value === 'serif' ? 'Georgia, serif' : 'system-ui, sans-serif'}"
 				>
 					{f.label}
@@ -65,15 +65,15 @@
 			<button
 				class="size-btn"
 				aria-label="Decrease font size"
-				onclick={() => readerSettings.update((s) => ({ ...s, fontSize: Math.max(14, s.fontSize - 1) }))}
-				disabled={$readerSettings.fontSize <= 14}
+				onclick={() => reader.settings =({ ...reader.settings, fontSize: Math.max(14, reader.settings.fontSize - 1) })}
+				disabled={reader.settings.fontSize <= 14}
 			>A-</button>
-			<span class="size-value">{$readerSettings.fontSize}px</span>
+			<span class="size-value">{reader.settings.fontSize}px</span>
 			<button
 				class="size-btn"
 				aria-label="Increase font size"
-				onclick={() => readerSettings.update((s) => ({ ...s, fontSize: Math.min(28, s.fontSize + 1) }))}
-				disabled={$readerSettings.fontSize >= 28}
+				onclick={() => reader.settings =({ ...reader.settings, fontSize: Math.min(28, reader.settings.fontSize + 1) })}
+				disabled={reader.settings.fontSize >= 28}
 			>A+</button>
 		</div>
 	</div>
@@ -84,15 +84,15 @@
 			<button
 				class="size-btn"
 				aria-label="Decrease line spacing"
-				onclick={() => readerSettings.update((s) => ({ ...s, lineHeight: Math.max(1.2, +(s.lineHeight - 0.1).toFixed(1)) }))}
-				disabled={$readerSettings.lineHeight <= 1.2}
+				onclick={() => reader.settings =({ ...reader.settings, lineHeight: Math.max(1.2, +(reader.settings.lineHeight - 0.1).toFixed(1)) })}
+				disabled={reader.settings.lineHeight <= 1.2}
 			>−</button>
-			<span class="size-value">{$readerSettings.lineHeight.toFixed(1)}</span>
+			<span class="size-value">{reader.settings.lineHeight.toFixed(1)}</span>
 			<button
 				class="size-btn"
 				aria-label="Increase line spacing"
-				onclick={() => readerSettings.update((s) => ({ ...s, lineHeight: Math.min(2.4, +(s.lineHeight + 0.1).toFixed(1)) }))}
-				disabled={$readerSettings.lineHeight >= 2.4}
+				onclick={() => reader.settings =({ ...reader.settings, lineHeight: Math.min(2.4, +(reader.settings.lineHeight + 0.1).toFixed(1)) })}
+				disabled={reader.settings.lineHeight >= 2.4}
 			>+</button>
 		</div>
 	</div>

@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { saveArticle } from '$lib/services/storage';
-	import { loadArticles } from '$lib/stores/articles';
+	import { articles } from '$lib/stores/articles.svelte';
 	import type { Article } from '$lib/types';
 
 	type ImportState = 'idle' | 'preview' | 'saving' | 'saved' | 'error';
@@ -49,7 +49,7 @@
 				wordCount: preview.wordCount ?? 0
 			};
 			await saveArticle(article);
-			await loadArticles();
+			await articles.load();
 			status = 'saved';
 			setTimeout(() => goto('/'), 1200);
 		} catch {

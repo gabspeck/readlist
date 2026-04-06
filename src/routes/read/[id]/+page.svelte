@@ -2,12 +2,12 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { readerSettings, initReaderSettings } from '$lib/stores/reader';
-	import { markRead } from '$lib/stores/articles';
+	import { reader } from '$lib/stores/reader.svelte';
+	import { articles } from '$lib/stores/articles.svelte';
 	import { getArticle } from '$lib/services/storage';
 	import ReaderControls from '$lib/components/ReaderControls.svelte';
 	import { copyToClipboard } from '$lib/services/share';
-	import { markPending } from '$lib/stores/sync';
+	import { sync } from '$lib/stores/sync.svelte';
 	import type { Article } from '$lib/types';
 
 	let article = $state<Article | null>(null);
@@ -41,7 +41,7 @@
 	}
 
 	onMount(() => {
-		initReaderSettings();
+		reader.init();
 
 		let cleanup: (() => void) | undefined;
 
@@ -65,13 +65,13 @@
 
 				// Throttle saves to every 500 ms
 				clearTimeout(saveTimer);
-				saveTimer = setTimeout(() => { saveProgress(id, progress); markPending(); }, 500);
+				saveTimer = setTimeout(() => { saveProgress(id, progress); sync.markPending(); }, 500);
 
 				// Mark read and clear progress on first completion
 				if (progress === 100 && canMarkRead) {
 					canMarkRead = false;
 					clearProgress(id);
-					markRead(id, true);
+					articles.markRead(id, true);
 				}
 			};
 
@@ -108,11 +108,11 @@
 	}
 
 	let themeAttr = $derived(
-		$readerSettings.theme === 'system' ? undefined : $readerSettings.theme
+		reader.settings.theme === 'system' ? undefined : reader.settings.theme
 	);
 
 	let readerStyle = $derived(
-		`font-size: ${$readerSettings.fontSize}px; line-height: ${$readerSettings.lineHeight}; font-family: ${$readerSettings.fontFamily === 'serif' ? 'Georgia, "Times New Roman", serif' : 'system-ui, -apple-system, sans-serif'};`
+		`font-size: ${reader.settings.fontSize}px; line-height: ${reader.settings.lineHeight}; font-family: ${reader.settings.fontFamily === 'serif' ? 'Georgia, "Times New Roman", serif' : 'system-ui, -apple-system, sans-serif'};`
 	);
 </script>
 

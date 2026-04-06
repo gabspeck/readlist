@@ -1,18 +1,18 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { initSettings } from '$lib/stores/settings';
-	import { initReaderSettings } from '$lib/stores/reader';
-	import { initAppTheme } from '$lib/stores/theme';
-	import { initSync } from '$lib/stores/sync';
+	import { settings } from '$lib/stores/settings.svelte';
+	import { reader } from '$lib/stores/reader.svelte';
+	import { theme } from '$lib/stores/theme.svelte';
+	import { sync } from '$lib/stores/sync.svelte';
 
 	let { children } = $props();
 
 	onMount(() => {
-		initSettings();
-		initReaderSettings();
-		initAppTheme();
-		initSync();
+		settings.init();
+		reader.init();
+		theme.init();
+		sync.init();
 	});
 </script>
 

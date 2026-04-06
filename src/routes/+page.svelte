@@ -7,20 +7,7 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import KindleHelp from '$lib/components/KindleHelp.svelte';
-	import {
-		articles,
-		filteredArticles,
-		filterMode,
-		searchQuery,
-		isLoading,
-		loadArticles,
-		addArticle,
-		markRead,
-		archiveArticle,
-		unarchiveArticle,
-		removeArticle,
-		sortMode
-	} from '$lib/stores/articles';
+	import { articles } from '$lib/stores/articles.svelte';
 	import { exportArticlesAsEpub } from '$lib/services/epub';
 	import type { FilterMode } from '$lib/types';
 
@@ -28,7 +15,7 @@
 
 	$effect(() => {
 		const param = page.url.searchParams.get('filter') as FilterMode | null;
-		filterMode.set(param && validFilters.has(param) ? param : 'all');
+		articles.filterMode = param && validFilters.has(param) ? param : 'all';
 	});
 
 	let showAddDialog = $state(false);
@@ -51,31 +38,31 @@
 	}
 
 	onMount(() => {
-		loadArticles();
+		articles.load();
 		loadProgressMap();
 	});
 
 	async function handleDelete(id: string): Promise<void> {
-		const article = await removeArticle(id);
+		const article = await articles.remove(id);
 		toastContainer?.show('Article deleted', {
 			action: 'Undo',
 			onAction: async () => {
-				if (article) await addArticle(article);
+				if (article) await articles.add(article);
 			}
 		});
 	}
 
 	async function handleArchive(id: string): Promise<void> {
-		const a = $filteredArticles.find((x) => x.id === id);
+		const a = articles.filtered.find((x) => x.id === id);
 		if (!a) return;
 		if (a.archived) {
-			await unarchiveArticle(id);
+			await articles.unarchive(id);
 			toastContainer?.show('Restored from archive');
 		} else {
-			await archiveArticle(id);
+			await articles.archive(id);
 			toastContainer?.show('Moved to archive', {
 				action: 'Undo',
-				onAction: () => unarchiveArticle(id)
+				onAction: () => articles.unarchive(id)
 			});
 		}
 	}
@@ -88,7 +75,7 @@
 	}
 
 	function toggleSelectAll(): void {
-		const visibleIds = $filteredArticles.map((a) => a.id);
+		const visibleIds = articles.filtered.map((a) => a.id);
 		const allSelected = visibleIds.every((id) => selectedIds.has(id));
 		selectedIds = allSelected ? new Set() : new Set(visibleIds);
 	}
@@ -99,29 +86,29 @@
 
 	async function markReadSelected(isRead: boolean): Promise<void> {
 		const ids = [...selectedIds];
-		await Promise.all(ids.map((id) => markRead(id, isRead)));
+		await Promise.all(ids.map((id) => articles.markRead(id, isRead)));
 		const n = ids.length;
 		toastContainer?.show(`Marked ${n} article${n !== 1 ? 's' : ''} as ${isRead ? 'read' : 'unread'}`, {
 			action: 'Undo',
-			onAction: () => Promise.all(ids.map((id) => markRead(id, !isRead)))
+			onAction: () => Promise.all(ids.map((id) => articles.markRead(id, !isRead)))
 		});
 		clearSelection();
 	}
 
 	async function archiveSelected(): Promise<void> {
 		const ids = [...selectedIds];
-		await Promise.all(ids.map((id) => archiveArticle(id)));
+		await Promise.all(ids.map((id) => articles.archive(id)));
 		const n = ids.length;
 		toastContainer?.show(`Archived ${n} article${n !== 1 ? 's' : ''}`, {
 			action: 'Undo',
-			onAction: () => Promise.all(ids.map((id) => unarchiveArticle(id)))
+			onAction: () => Promise.all(ids.map((id) => articles.unarchive(id)))
 		});
 		clearSelection();
 	}
 
 	async function unarchiveSelected(): Promise<void> {
 		const ids = [...selectedIds];
-		await Promise.all(ids.map((id) => unarchiveArticle(id)));
+		await Promise.all(ids.map((id) => articles.unarchive(id)));
 		const n = ids.length;
 		toastContainer?.show(`Restored ${n} article${n !== 1 ? 's' : ''}`);
 		clearSelection();
@@ -129,28 +116,28 @@
 
 	async function deleteSelected(): Promise<void> {
 		const ids = [...selectedIds];
-		const deleted = await Promise.all(ids.map((id) => removeArticle(id)));
+		const deleted = await Promise.all(ids.map((id) => articles.remove(id)));
 		const removed = deleted.filter(Boolean);
 		const n = ids.length;
 		toastContainer?.show(`Deleted ${n} article${n !== 1 ? 's' : ''}`, {
 			action: 'Undo',
-			onAction: async () => { for (const a of removed) if (a) await addArticle(a); }
+			onAction: async () => { for (const a of removed) if (a) await articles.add(a); }
 		});
 		clearSelection();
 	}
 
 	async function exportAsEpub(): Promise<void> {
-		const toExport = $articles.filter((a) => selectedIds.has(a.id));
+		const toExport = articles.items.filter((a) => selectedIds.has(a.id));
 		if (!toExport.length) return;
 
 		exporting = true;
 		try {
 			await exportArticlesAsEpub(toExport);
-			await Promise.all(toExport.map((a) => markRead(a.id, true)));
+			await Promise.all(toExport.map((a) => articles.markRead(a.id, true)));
 			const n = toExport.length;
 			toastContainer?.show(`Exported ${n} article${n !== 1 ? 's' : ''} and marked as read`, {
 				action: 'Undo',
-				onAction: () => Promise.all(toExport.map((a) => markRead(a.id, false)))
+				onAction: () => Promise.all(toExport.map((a) => articles.markRead(a.id, false)))
 			});
 			clearSelection();
 		} catch (e) {
@@ -161,19 +148,19 @@
 		}
 	}
 
-	let visibleCount = $derived($filteredArticles.length);
+	let visibleCount = $derived(articles.filtered.length);
 	let selectedCount = $derived(selectedIds.size);
 	let allVisibleSelected = $derived(
-		visibleCount > 0 && $filteredArticles.every((a) => selectedIds.has(a.id))
+		visibleCount > 0 && articles.filtered.every((a) => selectedIds.has(a.id))
 	);
 	let someSelected = $derived(selectedCount > 0);
 </script>
 
 <div class="app-shell">
-	<Navigation onAdd={() => { showAddDialog = true; }} hasArticles={$articles.length > 0} />
+	<Navigation onAdd={() => { showAddDialog = true; }} hasArticles={articles.items.length > 0} />
 
 	<main class="main">
-		{#if $isLoading}
+		{#if articles.isLoading}
 			<div class="loading-list">
 				{#each Array(5) as _}
 					<div class="skeleton-card">
@@ -184,7 +171,7 @@
 				{/each}
 			</div>
 		{:else if visibleCount === 0}
-			<EmptyState onAdd={() => { showAddDialog = true; }} isSearch={!!$searchQuery.trim()} isEmpty={$articles.length === 0} />
+			<EmptyState onAdd={() => { showAddDialog = true; }} isSearch={!!articles.searchQuery.trim()} isEmpty={articles.items.length === 0} />
 		{:else}
 			<div class="list-header">
 				<label class="select-all-label">
@@ -208,8 +195,8 @@
 				{#if !someSelected}
 					<select
 						class="sort-select"
-						value={$sortMode}
-						onchange={(e) => sortMode.set(e.currentTarget.value as typeof $sortMode)}
+						value={articles.sortMode}
+						onchange={(e) => articles.sortMode = e.currentTarget.value as typeof articles.sortMode}
 						aria-label="Sort articles"
 					>
 						<option value="newest">Newest</option>
@@ -226,18 +213,18 @@
 
 			{#if someSelected}
 				<div class="sel-action-bar" role="toolbar" aria-label="Selection actions">
-					{#if $filterMode === 'archived'}
+					{#if articles.filterMode === 'archived'}
 						<button class="sel-btn" onclick={unarchiveSelected}>Restore</button>
-					{:else if $filterMode === 'read'}
+					{:else if articles.filterMode === 'read'}
 						<button class="sel-btn" onclick={() => markReadSelected(false)}>Mark unread</button>
 						<button class="sel-btn" onclick={archiveSelected}>Archive</button>
 					{:else}
-						<button class="sel-btn" onclick={() => markReadSelected(true)}>Mark read</button>
+							<button class="sel-btn" onclick={() => markReadSelected(true)}>Mark read</button>
 						<button class="sel-btn" onclick={archiveSelected}>Archive</button>
 					{/if}
 					<button class="sel-btn sel-delete" onclick={deleteSelected}>Delete</button>
 
-					{#if $filterMode !== 'archived'}
+					{#if articles.filterMode !== 'archived'}
 						<span class="sel-divider" aria-hidden="true"></span>
 						<button
 							class="sel-btn sel-export"
@@ -273,17 +260,17 @@
 			{/if}
 
 			<ul class="article-list" aria-label="Articles">
-				{#each $filteredArticles as article (article.id)}
+				{#each articles.filtered as article (article.id)}
 					<li>
 						<ArticleCard
 							{article}
 							selected={selectedIds.has(article.id)}
 							readingProgress={progressMap[article.id] ?? 0}
-							showStatus={$filterMode === 'all'}
+							showStatus={articles.filterMode === 'all'}
 							onSelect={toggleSelect}
 							onArchive={handleArchive}
 							onDelete={handleDelete}
-							onToggleRead={(id, isRead) => markRead(id, isRead)}
+							onToggleRead={(id, isRead) => articles.markRead(id, isRead)}
 						/>
 					</li>
 				{/each}
@@ -294,7 +281,7 @@
 
 {#if showAddDialog}
 	<AddArticleDialog
-		onSave={addArticle}
+		onSave={(a) => articles.add(a)}
 		onClose={() => { showAddDialog = false; }}
 	/>
 {/if}

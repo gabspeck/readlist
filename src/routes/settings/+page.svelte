@@ -1,15 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
-	import { corsProxy } from '$lib/stores/settings';
+	import { settings } from '$lib/stores/settings.svelte';
 	import { getAllArticles } from '$lib/services/storage';
 	import { saveArticle } from '$lib/services/storage';
-	import {
-		syncStatus, lastSynced,
-		connectDrive, disconnectDrive, manualSync
-	} from '$lib/stores/sync';
+	import { sync } from '$lib/stores/sync.svelte';
 
-	let proxyValue = $state($corsProxy);
+	let proxyValue = $state(settings.corsProxy);
 	let saved = $state(false);
 	let lastExportedAt = $state<number | null>(
 		typeof localStorage !== 'undefined'
@@ -22,13 +19,13 @@
 
 	async function handleConnect(): Promise<void> {
 		connecting = true;
-		try { await connectDrive(); }
+		try { await sync.connect(); }
 		finally { connecting = false; }
 	}
 
 	async function handleSync(): Promise<void> {
 		syncing = true;
-		try { await manualSync(); }
+		try { await sync.manualSync(); }
 		finally { syncing = false; }
 	}
 
@@ -45,7 +42,7 @@
 	});
 
 	function saveProxy(): void {
-		corsProxy.set(proxyValue.trim());
+		settings.corsProxy = proxyValue.trim();
 		saved = true;
 		setTimeout(() => { saved = false; }, 2000);
 	}
@@ -144,19 +141,19 @@
 		<section class="settings-section">
 			<h2 class="section-title">Google Drive Sync</h2>
 
-			{#if $syncStatus !== 'disconnected'}
+			{#if sync.status !== 'disconnected'}
 				<p class="section-desc">
-					Syncing to Google Drive. Last synced: {formatTs($lastSynced)}.
+					Syncing to Google Drive. Last synced: {formatTs(sync.lastSynced)}.
 				</p>
 					<div class="data-buttons">
 					<button
 						class="btn-secondary"
 						onclick={handleSync}
-						disabled={syncing || $syncStatus === 'syncing'}
+						disabled={syncing || sync.status === 'syncing'}
 					>
-						{syncing || $syncStatus === 'syncing' ? 'Syncing…' : 'Sync now'}
+						{syncing || sync.status === 'syncing' ? 'Syncing…' : 'Sync now'}
 					</button>
-					<button class="btn-secondary" onclick={disconnectDrive}>Disconnect</button>
+					<button class="btn-secondary" onclick={() => sync.disconnect()}>Disconnect</button>
 				</div>
 			{:else}
 				<p class="section-desc">

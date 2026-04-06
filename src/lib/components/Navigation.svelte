@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { appTheme, cycleTheme } from '$lib/stores/theme';
-	import { searchQuery } from '$lib/stores/articles';
-	import { syncStatus, hasPendingChanges, manualSync } from '$lib/stores/sync';
+	import { theme, cycleTheme } from '$lib/stores/theme.svelte';
+	import { articles } from '$lib/stores/articles.svelte';
+	import { sync } from '$lib/stores/sync.svelte';
 	import type { FilterMode } from '$lib/types';
 
 	let syncing = $state(false);
 
 	async function handleSync(): Promise<void> {
 		syncing = true;
-		try { await manualSync(); } finally { syncing = false; }
+		try { await sync.manualSync(); } finally { syncing = false; }
 	}
 
 	let { onAdd, hasArticles = false }: { onAdd: () => void; hasArticles?: boolean } = $props();
@@ -43,7 +43,7 @@
 
 	function closeSearch(): void {
 		searchOpen = false;
-		searchQuery.set('');
+		articles.searchQuery = '';
 	}
 
 	function handleSearchKey(e: KeyboardEvent): void {
@@ -64,8 +64,8 @@
 					class="search-input"
 					type="search"
 					placeholder="Search articles…"
-					value={$searchQuery}
-					oninput={(e) => searchQuery.set(e.currentTarget.value)}
+					value={articles.searchQuery}
+					oninput={(e) => articles.searchQuery = e.currentTarget.value}
 					onkeydown={handleSearchKey}
 					aria-label="Search articles"
 				/>
@@ -79,23 +79,23 @@
 			<a href="/" class="brand-link">Readlist</a>
 
 			<div class="nav-actions">
-				{#if $syncStatus !== 'disconnected'}
+				{#if sync.status !== 'disconnected'}
 					<button
 						class="icon-btn sync-btn"
-						class:sync-pending={$hasPendingChanges && $syncStatus !== 'syncing'}
-						class:sync-error={$syncStatus === 'error' || $syncStatus === 'needs_auth'}
-						class:sync-spinning={syncing || $syncStatus === 'syncing'}
+						class:sync-pending={sync.hasPendingChanges && sync.status !== 'syncing'}
+						class:sync-error={sync.status === 'error' || sync.status === 'needs_auth'}
+						class:sync-spinning={syncing || sync.status === 'syncing'}
 						onclick={handleSync}
-						disabled={syncing || $syncStatus === 'syncing'}
+						disabled={syncing || sync.status === 'syncing'}
 						aria-label="Sync with Google Drive"
-						title={$syncStatus === 'error' || $syncStatus === 'needs_auth' ? 'Sync failed — click to retry' : $hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
+						title={sync.status === 'error' || sync.status === 'needs_auth' ? 'Sync failed — click to retry' : sync.hasPendingChanges ? 'Pending changes — click to sync' : 'Synced'}
 					>
 						<svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="sync-icon">
 							<path d="M3 10a7 7 0 0 1 11.9-5M17 10a7 7 0 0 1-11.9 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
 							<path d="M14 5l1 -2.5 1.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
 							<path d="M6 15l-1 2.5-1.5-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						{#if $hasPendingChanges && $syncStatus !== 'syncing'}
+						{#if sync.hasPendingChanges && sync.status !== 'syncing'}
 							<span class="sync-dot" aria-hidden="true"></span>
 						{/if}
 					</button>
@@ -116,16 +116,16 @@
 
 				<button
 					class="icon-btn"
-					onclick={() => appTheme.update(cycleTheme)}
-					aria-label="Toggle theme (current: {$appTheme})"
-					title="Theme: {$appTheme}"
+					onclick={() => theme.current = cycleTheme(theme.current)}
+					aria-label="Toggle theme (current: {theme.current})"
+					title="Theme: {theme.current}"
 				>
-					{#if $appTheme === 'dark'}
+					{#if theme.current === 'dark'}
 						<!-- Moon -->
 						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 							<path d="M17 12.5A7 7 0 0 1 8 3.7a7 7 0 1 0 9 8.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
 						</svg>
-					{:else if $appTheme === 'light'}
+					{:else if theme.current === 'light'}
 						<!-- Sun -->
 						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 							<circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.5"/>

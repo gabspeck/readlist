@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { cycleTheme, applyTheme } from '$lib/stores/theme';
+import { cycleTheme, applyTheme } from '$lib/stores/theme.svelte';
 
 describe('cycleTheme', () => {
 	it('cycles system → dark', () => {
