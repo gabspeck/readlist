@@ -6,7 +6,7 @@ import * as storage from '$lib/services/storage';
 import { articles } from '$lib/stores/articles';
 import { readerSettings, READER_SETTINGS_UPDATED_AT_KEY } from '$lib/stores/reader';
 import { appTheme, applyTheme, APP_THEME_UPDATED_AT_KEY } from '$lib/stores/theme';
-import type { SyncFile } from '$lib/types';
+import type { Article, SyncFile } from '$lib/types';
 
 // ─── localStorage keys ────────────────────────────────────────────────────────
 
@@ -44,13 +44,33 @@ export function markPending(): void {
 	if (localStorage.getItem(LS_CONNECTED)) hasPendingChanges.set(true);
 }
 
-// Watch stores and mark pending whenever they change.
+// Watch stores and mark pending only when values actually change.
+function articleSnapshot(list: Article[]): string {
+	return JSON.stringify(list.map((a) => [a.id, a.isRead, a.archived, a.tags]));
+}
+
 function watchForPending(): void {
-	let skip = 3; // skip initial emission from each of the 3 subscriptions
-	const onchange = () => { if (skip > 0) { skip--; return; } markPending(); };
-	articles.subscribe(onchange);
-	readerSettings.subscribe(onchange);
-	appTheme.subscribe(onchange);
+	let prevArticles = articleSnapshot(get(articles));
+	let prevReader = JSON.stringify(get(readerSettings));
+	let prevTheme = get(appTheme);
+
+	articles.subscribe(($a) => {
+		const snap = articleSnapshot($a);
+		if (snap === prevArticles) return;
+		prevArticles = snap;
+		markPending();
+	});
+	readerSettings.subscribe(($r) => {
+		const snap = JSON.stringify($r);
+		if (snap === prevReader) return;
+		prevReader = snap;
+		markPending();
+	});
+	appTheme.subscribe(($t) => {
+		if ($t === prevTheme) return;
+		prevTheme = $t;
+		markPending();
+	});
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
