@@ -2,7 +2,7 @@ import { Readability } from '@mozilla/readability';
 import type { Article } from '$lib/types';
 import { preprocessors } from './dom-preprocessors';
 
-const DEFAULT_PROXY = 'https://corsproxy.io/?url=';
+const DEFAULT_PROXY = '/api/proxy?url=';
 
 function getProxy(): string {
 	if (typeof localStorage !== 'undefined') {

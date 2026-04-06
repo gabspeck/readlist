@@ -113,7 +113,7 @@
 					type="url"
 					bind:value={proxyValue}
 					class="proxy-input"
-					placeholder="https://corsproxy.io/?url="
+					placeholder="/api/proxy?url="
 					spellcheck={false}
 					autocomplete="off"
 				/>

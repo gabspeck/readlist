@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
 const CORS_PROXY_KEY = 'corsProxy';
-const DEFAULT_PROXY = 'https://corsproxy.io/?url=';
+const DEFAULT_PROXY = '/api/proxy?url=';
 
 function loadCorsProxy(): string {
 	if (typeof localStorage === 'undefined') return DEFAULT_PROXY;
